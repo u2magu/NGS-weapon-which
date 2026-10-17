@@ -3,7 +3,11 @@
 PSO2 ニュージェネシス（NGS）の武器を**ざっくり威力比較**するブラウザツールです。
 サーバー不要・単一HTMLファイルで動作します（データ内蔵）。
 
-**👉 使い方: `index.html` をブラウザで開くだけ**（Chrome / Edge 推奨）
+**👉 使い方: 以下のURLを開くだけでOK**（Chrome / Edge 推奨）
+
+**▶ ▶ [https://u2magu.github.io/NGS-weapon-which/](https://u2magu.github.io/NGS-weapon-which/)**
+
+（GitHub Pagesで公開。ローカルで動かす場合は `index.html` を直接ブラウザで開くだけ）
 
 ## 計算式
 
