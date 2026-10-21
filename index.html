@@ -42,7 +42,7 @@ details#potDetail{border-top:1px dashed var(--line);padding-top:8px}details#potD
 </style>
 </head>
 <body data-theme="dark">
-<header><h1>NGS 武器どっち？</h1><span class="rar">v2610a</span>
+<header><h1>NGS 武器どっち？</h1><span class="rar">v2610b</span>
  <span class="note">潜在Lv1〜6・プリセット対応のざっくり威力比較</span>
  <span style="flex:1"></span>
  <label class="fld">テーマ<select id="themeSel">
@@ -59,7 +59,7 @@ details#potDetail{border-top:1px dashed var(--line);padding-top:8px}details#potD
     <span class="muted">シリーズはプルダウン選択（潜在能力は自動セット・変更不可）。威力＝攻撃力×潜在Lv倍率×プリセット倍率</span>
   </div>
   <div id="areaRows"></div>
-<details id="potDetail" style="margin-top:10px"><summary>潜在能力・プリセット能力の詳細（表示中の武器は中身に記載）</summary><div id="areaPot" style="margin-top:4px"></div></details>
+<details id="potDetail" style="margin-top:10px" open><summary>潜在能力・プリセット能力の詳細（表示中の全武器ぶんを記載。重複は省略）</summary><div id="areaPot" style="margin-top:4px"></div></details>
 </section>
 
 <section>
@@ -114,39 +114,42 @@ document.getElementById("themeSel").value=localStorage.getItem(LSKT)||"dark";
 function dmg(r){const m=potMult(r.pot,r.lv||6);return m==null?null:num(r.atk)*m*preMult(r.pre,r.preLv||5);}
 function renderPot(){
  const el=document.getElementById("areaPot");
- let b=D.rows[0];
- let idx=0;
- if(!b||!b.pot||!POT[b.pot]){
-  const found=D.rows.findIndex(r=>r.pot&&POT[r.pot]);
-  if(found<0){el.innerHTML=`<div class="muted">まだ潜在能力データを持つ武器がありません。シリーズをプルダウンで選ぶとここに詳細が出ます。</div>`;return;}
-  b=D.rows[found];idx=found;
- }
- let h="";
- h+=`<div class="muted" style="margin-bottom:4px">表示中：${esc(b.name)||"("+(idx+1)+"行目)"}（${idx+1}行目の武器）</div>`;
- if(b.pot&&POT[b.pot]){
-  const lv=b.lv||6;
-  const chips=[1,2,3,4,5,6].map(v=>{
-   const m=POT[b.pot][v-1];
-   const cur=v===lv?'style="border-color:var(--acc);color:var(--acc);font-weight:700"':"";
-   return m==null?`<span class="chip" ${cur}>Lv${v} ？</span>`:`<span class="chip" ${cur}>Lv${v} ${Math.round((m-1)*1000)/10>0?"+":""}${Math.round((m-1)*1000)/10}%</span>`;
-  }).join("");
-  h+=`<div style="line-height:1.7"><b>潜在能力：${esc(b.pot)}</b><span class="muted">　選択中 Lv${lv} → 威力${(()=>{const m=POT[b.pot][lv-1];return m==null?"？":"+"+Math.round((m-1)*1000)/10+"%";})()}</span></div>
-  <div style="margin:5px 0">${chips}</div>
-  <div class="muted" style="white-space:normal;margin-bottom:8px">${esc(PDESC[b.pot]||"")}</div>`;
+ if(!D.rows.length){el.innerHTML=`<div class="muted">まだ武器がありません。シリーズをプルダウンで選ぶとここに詳細が出ます。</div>`;return;}
+ const seen=new Set();let h="";let n=0;
+ D.rows.forEach((r,i)=>{
+  const key=(r.pot||"")+"\u0001"+(r.pre||"");
+  if(!POT[r.pot]&&(!PREW[r.pre]||r.pre==="なし"))return;
+  if(seen.has(key))return;seen.add(key);
+  h+=`<div${n?' style="border-top:1px dashed var(--line);padding-top:7px;margin-top:7px"':""}>`
+   +`<div class="muted" style="margin-bottom:3px;font-weight:600;color:var(--tx)">■ ${r.name?esc(r.name):"（"+(i+1)+"行目）"}（${i+1}行目の武器）</div>`;
+  n++;
+  if(r.pot&&POT[r.pot]){
+   const lv=r.lv||6;
+   const chips=[1,2,3,4,5,6].map(v=>{
+    const m=POT[r.pot][v-1];
+    const cur=v===lv?'style="border-color:var(--acc);color:var(--acc);font-weight:700"':"";
+    return m==null?`<span class="chip" ${cur}>Lv${v} ？</span>`:`<span class="chip" ${cur}>Lv${v} ${Math.round((m-1)*1000)/10>0?"+":""}${Math.round((m-1)*1000)/10}%</span>`;
+   }).join("");
+   h+=`<div style="line-height:1.7"><b>潜在能力：${esc(r.pot)}</b><span class="muted">　選択中 Lv${lv} → 威力${(()=>{const m=POT[r.pot][lv-1];return m==null?"？":"+"+Math.round((m-1)*1000)/10+"%";})()}</span></div>
+   <div style="margin:5px 0">${chips}</div>
+   <div class="muted" style="white-space:normal;margin-bottom:8px">${esc(PDESC[r.pot]||"")}</div>`;
+   }
+  const pd=PREW[r.pre];
+  if(pd){
+   const clv=r.preLv||5;
+   const chips=[1,2,3,4,5].map(v=>{
+    const cur=v===clv?'style="border-color:var(--acc);color:var(--acc);font-weight:700"':"";
+    return `<span class="chip" ${cur}>Lv${v} +${pd.v[v-1]}%</span>`;
+   }).join("");
+   h+=`<div style="line-height:1.7"><b>プリセット：${esc(r.pre)}</b><span class="muted">　${esc(pd.note)}　選択中 Lv${clv} → 威力+${pd.v[clv-1]}%（=×${preMult(r.pre,clv).toFixed(4).replace(/0+$/,"").replace(/\.$/,"")}）</span></div>
+   <div style="margin:5px 0">${chips}</div>
+   <div class="muted" style="margin-bottom:8px">${esc(pd.eff)}・wikiにより確認（アバンダクは特殊能力20種が最大条件）</div>`;
+  }else{
+   h+=`<div class="muted" style="margin-bottom:8px">プリセット能力なし</div>`;
   }
- const pd=PREW[b.pre];
- if(pd){
-  const clv=b.preLv||5;
-  const chips=[1,2,3,4,5].map(v=>{
-   const cur=v===clv?'style="border-color:var(--acc);color:var(--acc);font-weight:700"':"";
-   return `<span class="chip" ${cur}>Lv${v} +${pd.v[v-1]}%</span>`;
-  }).join("");
-  h+=`<div style="line-height:1.7"><b>プリセット：${esc(b.pre)}</b><span class="muted">　${esc(pd.note)}　選択中 Lv${clv} → 威力+${pd.v[clv-1]}%（=×${preMult(b.pre,clv).toFixed(4).replace(/0+$/,"").replace(/\.$/,"")}）</span></div>
-  <div style="margin:5px 0">${chips}</div>
-  <div class="muted" style="margin-bottom:8px">${esc(pd.eff)}・wikiにより確認（アバンダクは特殊能力20種が最大条件）</div>`;
- }else{
-  h+=`<div class="muted">プリセット能力なし</div>`;
- }
+  h+=`</div>`;
+ });
+ if(!n){el.innerHTML=`<div class="muted">まだ潜在能力データを持つ武器がありません。シリーズをプルダウンで選ぶとここに詳細が出ます。</div>`;return;}
  el.innerHTML=h;
 }
 function renderRows(){
@@ -191,7 +194,7 @@ document.body.addEventListener("change",e=>{
  else if(k==="lv")D.rows[i].lv=+t.value;
  else if(k==="pre")D.rows[i].pre=t.value;
  else if(k==="preLv")D.rows[i].preLv=+t.value;
- save();renderRows();renderCmp();
+ save();render();
 });
 document.getElementById("add").onclick=()=>{D.rows.push({name:"",atk:"",pot:"",lv:6,pre:"なし",preLv:5});save();render();};
 document.getElementById("reset").onclick=()=>{if(confirm("全行削除して初期化しますか？")){localStorage.removeItem(LSK);D=load();render();}};
